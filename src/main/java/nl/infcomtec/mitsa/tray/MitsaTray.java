@@ -40,6 +40,8 @@ import nl.infcomtec.mitsa.tray.dbus.StatusNotifierItem;
  */
 public class MitsaTray {
 
+    private static final Color ICON_TINT = new Color(0x00BCD4); // cyan
+
     private static FileLock lock;
     private static FileChannel lockChannel;
     private TrayIcon trayIcon;
@@ -167,7 +169,7 @@ public class MitsaTray {
         painter = new TrayIconPainter();
         trayIconSize = SystemTray.getSystemTray().getTrayIconSize();
 
-        trayIcon = new TrayIcon(painter.paint(trayIconSize, new Color(0xF4F5F6)));
+        trayIcon = new TrayIcon(painter.paint(trayIconSize, ICON_TINT));
         trayIcon.setToolTip("MITSA");
         buildMenu();
 
@@ -200,7 +202,7 @@ public class MitsaTray {
         trayIconSize = new Dimension(24, 24);
 
         StatusNotifierItem sni = new StatusNotifierItem(conn, "mitsa", "MITSA");
-        sni.setIcon(painter.paint(trayIconSize, new Color(0xF4F5F6)), trayIconSize, new Color(0xF4F5F6));
+        sni.setIcon(painter.paint(trayIconSize, ICON_TINT), trayIconSize, ICON_TINT);
         sni.setActivateListener(new ActivateHandler());
         sni.register();
         usingDBusTray = true;
