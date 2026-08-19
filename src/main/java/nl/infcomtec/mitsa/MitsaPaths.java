@@ -81,28 +81,17 @@ public class MitsaPaths {
     }
 
     /**
-     * Where a MITSA-managed app should keep its own runtime/data state —
-     * NOT MITSA's own config (that's configDir()/jarsDir()). Follows each
-     * OS's real data-directory convention, same shape as configDir() but
-     * a distinct root, since app data (catalogs, checkpoints, user
-     * documents) and MITSA's own launcher bookkeeping are different
-     * categories of thing that happen to both need "a proper per-OS
-     * folder instead of a dotfile in $HOME".
+     * Where a MITSA-managed app should keep its own runtime/data state
+     * (catalogs, checkpoints, user documents) — nested under MITSA's own
+     * config root ({@code configDir()/data/<appId>}), not scattered
+     * across each OS's own separate data-directory convention. Walter's
+     * call, 2026-08-19: every MITSA-managed app's footprint on disk
+     * should collapse into one shared MITSA environment, not just its
+     * launcher/version bookkeeping — the app-data equivalent of
+     * jarsDir()/appJarsDir().
      */
     public static File appDataDir(String appId) {
-        String os = System.getProperty("os.name").toLowerCase();
-        File dir;
-        if (os.contains("win")) {
-            String appData = System.getenv("APPDATA");
-            dir = new File(appData, appId);
-        } else if (os.contains("mac")) {
-            dir = new File(userHome(), "Library/Application Support/" + appId);
-        } else {
-            String xdg = System.getenv("XDG_DATA_HOME");
-            File base = (xdg != null && !xdg.isEmpty())
-                    ? new File(xdg) : new File(userHome(), ".local/share");
-            dir = new File(base, appId);
-        }
+        File dir = new File(new File(configDir(), "data"), appId);
         if (!dir.exists() && !dir.mkdirs()) {
             throw new RuntimeException("Could not create app data directory " + dir);
         }
