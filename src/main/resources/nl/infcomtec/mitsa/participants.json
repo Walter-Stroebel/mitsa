@@ -1,0 +1,11 @@
+{
+  "participants": [
+    {
+      "id": "infimg",
+      "githubOwner": "Walter-Stroebel",
+      "githubRepo": "infimg",
+      "assetNamePattern": "infimg-.*-jar-with-dependencies\\.jar",
+      "description": "A small, fast image viewer with fit-to-window and arbitrary rotation."
+    }
+  ]
+}
