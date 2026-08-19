@@ -11,6 +11,17 @@ import java.io.File;
  */
 public class MitsaPaths {
 
+    /**
+     * Test/override escape hatch: when set, replaces
+     * System.getProperty("user.home") everywhere in this class. Needed
+     * because the JVM's user.home is read from the OS password database
+     * on Linux and does not follow a shell-level $HOME override.
+     */
+    private static String userHome() {
+        String override = System.getenv("MITSA_HOME");
+        return (override != null && !override.isEmpty()) ? override : System.getProperty("user.home");
+    }
+
     public static File configDir() {
         String os = System.getProperty("os.name").toLowerCase();
         File dir;
@@ -18,11 +29,11 @@ public class MitsaPaths {
             String appData = System.getenv("APPDATA");
             dir = new File(appData, "mitsa");
         } else if (os.contains("mac")) {
-            dir = new File(System.getProperty("user.home"), "Library/Application Support/mitsa");
+            dir = new File(userHome(), "Library/Application Support/mitsa");
         } else {
             String xdg = System.getenv("XDG_CONFIG_HOME");
             File base = (xdg != null && !xdg.isEmpty())
-                    ? new File(xdg) : new File(System.getProperty("user.home"), ".config");
+                    ? new File(xdg) : new File(userHome(), ".config");
             dir = new File(base, "mitsa");
         }
         if (!dir.exists() && !dir.mkdirs()) {
@@ -62,9 +73,38 @@ public class MitsaPaths {
      * expected to add this folder to PATH themselves, same as step 3.
      */
     public static File binDir() {
-        File dir = new File(System.getProperty("user.home"), "bin");
+        File dir = new File(userHome(), "bin");
         if (!dir.exists() && !dir.mkdirs()) {
             throw new RuntimeException("Could not create bin directory " + dir);
+        }
+        return dir;
+    }
+
+    /**
+     * Where a MITSA-managed app should keep its own runtime/data state —
+     * NOT MITSA's own config (that's configDir()/jarsDir()). Follows each
+     * OS's real data-directory convention, same shape as configDir() but
+     * a distinct root, since app data (catalogs, checkpoints, user
+     * documents) and MITSA's own launcher bookkeeping are different
+     * categories of thing that happen to both need "a proper per-OS
+     * folder instead of a dotfile in $HOME".
+     */
+    public static File appDataDir(String appId) {
+        String os = System.getProperty("os.name").toLowerCase();
+        File dir;
+        if (os.contains("win")) {
+            String appData = System.getenv("APPDATA");
+            dir = new File(appData, appId);
+        } else if (os.contains("mac")) {
+            dir = new File(userHome(), "Library/Application Support/" + appId);
+        } else {
+            String xdg = System.getenv("XDG_DATA_HOME");
+            File base = (xdg != null && !xdg.isEmpty())
+                    ? new File(xdg) : new File(userHome(), ".local/share");
+            dir = new File(base, appId);
+        }
+        if (!dir.exists() && !dir.mkdirs()) {
+            throw new RuntimeException("Could not create app data directory " + dir);
         }
         return dir;
     }
