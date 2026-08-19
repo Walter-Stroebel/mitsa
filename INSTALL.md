@@ -61,7 +61,7 @@ You want to see `17` in the output.
 Go to
 [github.com/Walter-Stroebel/mitsa/releases/latest](https://github.com/Walter-Stroebel/mitsa/releases/latest)
 and download the one `.jar` file attached
-(`mitsa-<version>-jar-with-dependencies.jar`) — no building required.
+(`mitsa-jar-with-dependencies.jar`) — no building required.
 
 (If you'd rather build from source, see
 ["Building from source"](#building-from-source-instead) at the end of
