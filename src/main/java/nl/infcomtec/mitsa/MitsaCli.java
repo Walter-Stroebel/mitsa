@@ -38,6 +38,8 @@ public class MitsaCli {
             cmdAdd(rest);
         } else if (verb.equals("tray")) {
             MitsaTray.main(rest);
+        } else if (verb.equals("reshim")) {
+            cmdReshim(rest);
         } else {
             printUsage();
             System.exit(1);
@@ -51,6 +53,7 @@ public class MitsaCli {
         System.err.println("  mitsa list");
         System.err.println("  mitsa add <id> <githubOwner> <githubRepo> <assetNamePattern>");
         System.err.println("  mitsa tray");
+        System.err.println("  mitsa reshim [id]");
     }
 
     private static void cmdRun(String[] rest) throws IOException {
@@ -139,6 +142,29 @@ public class MitsaCli {
             }
         }
         System.out.println("Done. Run 'mitsa list' to see what's installed, or 'mitsa run <id>' to launch one.");
+    }
+
+    /**
+     * Re-writes shims for already-registered apps without touching
+     * apps.json or re-fetching jars — needed after upgrading mitsa
+     * itself changes what ShimWriter produces (e.g. v1.1.0 added
+     * installing onto PATH, which apps registered under older mitsa
+     * versions never got).
+     */
+    private static void cmdReshim(String[] rest) throws IOException {
+        AppRegistry reg = AppRegistry.load();
+        if (rest.length == 1) {
+            AppEntry app = reg.find(rest[0]);
+            if (app == null) {
+                System.err.println("No such app '" + rest[0] + "'");
+                System.exit(1);
+            }
+            ShimWriter.writeShims(app);
+        } else {
+            for (AppEntry app : reg.apps) {
+                ShimWriter.writeShims(app);
+            }
+        }
     }
 
     private static void cmdAdd(String[] rest) throws IOException {
