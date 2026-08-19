@@ -99,6 +99,7 @@ public class MitsaTray {
     private static final int CONTROL_PORT = 0x4D1A; // "MI" in hex-ish, arbitrary fixed port
 
     public static final String COMMAND_REFRESH = "refresh";
+    public static final String COMMAND_STOP = "stop";
 
     /** Sends a short command to an already-running tray's control channel, if one is listening. Silently does nothing if no tray is up - callers don't need to know whether a tray happens to be running. */
     public static void notifyRunningTray(String command) {
@@ -111,6 +112,28 @@ public class MitsaTray {
         }
     }
 
+    /**
+     * Sends COMMAND_STOP and waits up to timeoutMs for the dying tray's PID
+     * ack, instead of the caller having to pkill-and-hope. Returns the PID
+     * it reported stopping, or null if no tray answered in time (either none
+     * was running, or it didn't reply before exiting - both read the same
+     * to a caller: nothing left to wait on).
+     */
+    public static Long stopRunningTrayAndWait(long timeoutMs) {
+        try (DatagramSocket sock = new DatagramSocket()) {
+            sock.setSoTimeout((int) timeoutMs);
+            byte[] buf = COMMAND_STOP.getBytes();
+            sock.send(new DatagramPacket(buf, buf.length, InetAddress.getLoopbackAddress(), CONTROL_PORT));
+            byte[] replyBuf = new byte[32];
+            DatagramPacket reply = new DatagramPacket(replyBuf, replyBuf.length);
+            sock.receive(reply);
+            String pidText = new String(reply.getData(), 0, reply.getLength());
+            return Long.parseLong(pidText);
+        } catch (IOException | NumberFormatException ex) {
+            return null;
+        }
+    }
+
     private void startControlChannel() {
         Thread listener = new Thread(new ControlChannelListener(), "mitsa-tray-control");
         listener.setDaemon(true);
@@ -119,24 +142,32 @@ public class MitsaTray {
 
     private class ControlChannelListener implements Runnable {
 
+        private DatagramSocket sock;
+
         @Override
         public void run() {
-            try (DatagramSocket sock = new DatagramSocket(CONTROL_PORT, InetAddress.getLoopbackAddress())) {
+            try (DatagramSocket s = new DatagramSocket(CONTROL_PORT, InetAddress.getLoopbackAddress())) {
+                sock = s;
                 byte[] buf = new byte[64];
                 while (true) {
                     DatagramPacket pkt = new DatagramPacket(buf, buf.length);
                     sock.receive(pkt);
                     String command = new String(pkt.getData(), 0, pkt.getLength());
-                    handleCommand(command);
+                    handleCommand(command, pkt.getAddress(), pkt.getPort());
                 }
             } catch (IOException ex) {
                 // another process already holds the control port (a second tray
                 // instance racing before its own FileLock check, or something
-                // unrelated squatting the port) - not fatal, refresh just won't work
+                // unrelated squatting the port) - not fatal, refresh/stop just won't work
             }
         }
 
-        private void handleCommand(String command) {
+        private void handleCommand(String command, java.net.InetAddress replyTo, int replyPort) {
+            if (COMMAND_STOP.equals(command)) {
+                ackStop(replyTo, replyPort);
+                System.exit(0);
+                return;
+            }
             if (COMMAND_REFRESH.equals(command) && !usingDBusTray) {
                 SwingUtilities.invokeLater(new Runnable() {
                     @Override
@@ -150,6 +181,15 @@ public class MitsaTray {
             }
             // the D-Bus backend already rebuilds its menu fresh on every click,
             // so "refresh" is a no-op there - nothing stale to replace
+        }
+
+        private void ackStop(java.net.InetAddress replyTo, int replyPort) {
+            try {
+                byte[] pidBytes = String.valueOf(ProcessHandle.current().pid()).getBytes();
+                sock.send(new DatagramPacket(pidBytes, pidBytes.length, replyTo, replyPort));
+            } catch (IOException ignored) {
+                // caller's stopRunningTrayAndWait() will just time out and report null
+            }
         }
     }
 
