@@ -175,4 +175,3 @@ cp target/mitsa-jar-with-dependencies.jar ~/.config/mitsa/mitsa.jar   # Linux pa
 ```
 
 Then continue from [step 3](#3-write-the-one-shim-script) above.
-</content>

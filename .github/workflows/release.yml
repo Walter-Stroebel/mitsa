@@ -22,4 +22,3 @@ jobs:
         with:
           files: target/mitsa-jar-with-dependencies.jar
           generate_release_notes: true
-</content>
