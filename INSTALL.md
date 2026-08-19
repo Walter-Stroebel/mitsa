@@ -141,22 +141,19 @@ the cache in place.
   or you need a new terminal for the PATH change to take effect.
 - **`mitsa run <id>` says "No cached jar"** — run `mitsa update <id>`
   first; `mitsa run` never hits the network itself.
-- **The system tray doesn't show a MITSA icon** — Linux tray icons are
-  fragile in general, for reasons outside any one app's control. GNOME
-  3.26 (2017) dropped the legacy XEmbed tray protocol that
-  `java.awt.SystemTray` (and countless other apps) speak, in favor of a
-  D-Bus-based one it never fully backfilled compatibility for — this
-  broke tray icons for a long list of real, unrelated apps for years,
-  not just Java ones. Confusingly, this is *not* automatically "fixed"
-  by using a desktop that kept the old tray around either: on one
-  Cinnamon 6.0.4 machine tested 2026-08-19, `SystemTray.isSupported()`
-  still returned `false` across JDK 8/11/17 alike, root-caused to a
-  Cinnamon-side tray-manager bug unrelated to the GNOME/D-Bus story
-  (Cinnamon never adopted that protocol change in the first place). In
-  short: if the tray icon doesn't appear, it is very likely your desktop
-  environment's own tray plumbing, not a `mitsa tray` bug — the CLI
-  (`run`/`update`/`list`/`add`) is fully independent of the tray and
-  unaffected either way.
+- **The system tray doesn't show a MITSA icon** — as of v1.3.0 this
+  should be rare. Windows and macOS use `java.awt.SystemTray` directly
+  and it works natively there. On Linux, many modern desktops (GNOME
+  3.26+, some Cinnamon builds) dropped the legacy XEmbed tray protocol
+  `SystemTray` speaks in favor of a D-Bus-based one
+  (StatusNotifierItem) — `mitsa tray` detects this and falls back to a
+  built-in D-Bus client automatically, no extra setup needed, verified
+  live against a real Cinnamon 6.0.5 desktop. If the icon still doesn't
+  appear after that fallback, your desktop likely has no
+  `org.kde.StatusNotifierWatcher` running at all (some minimal window
+  managers, or a session with no tray host applet enabled) — in that
+  case the CLI (`run`/`update`/`list`/`add`) is still fully independent
+  of the tray and unaffected either way.
 
 ---
 
