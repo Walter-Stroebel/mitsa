@@ -54,4 +54,18 @@ public class MitsaPaths {
     public static File lockFile() {
         return new File(configDir(), "tray.lock");
     }
+
+    /**
+     * Where MITSA installs its own launcher and per-app shims onto PATH —
+     * mirrors the location MITSA's own INSTALL.md step 3 already uses
+     * (~/bin/mitsa), so app shims land next to it. Windows apps are
+     * expected to add this folder to PATH themselves, same as step 3.
+     */
+    public static File binDir() {
+        File dir = new File(System.getProperty("user.home"), "bin");
+        if (!dir.exists() && !dir.mkdirs()) {
+            throw new RuntimeException("Could not create bin directory " + dir);
+        }
+        return dir;
+    }
 }

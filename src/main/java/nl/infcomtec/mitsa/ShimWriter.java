@@ -47,5 +47,33 @@ public class ShimWriter {
                 .getBytes(StandardCharsets.UTF_8));
 
         System.out.println("Wrote shims to " + dir);
+
+        installOnPath(app);
+    }
+
+    /**
+     * Copies the launch shim onto PATH (MitsaPaths.binDir(), the same
+     * folder MITSA's own INSTALL.md has the user put ~/bin/mitsa in) so
+     * an app is runnable as a single bare command, not just from the
+     * per-app shim folder.
+     */
+    private static void installOnPath(AppEntry app) throws IOException {
+        String os = System.getProperty("os.name").toLowerCase();
+        File bin = MitsaPaths.binDir();
+        Set<PosixFilePermission> perms = PosixFilePermissions.fromString("rwxr-xr-x");
+        if (os.contains("win")) {
+            File target = new File(bin, app.id + ".bat");
+            Files.write(target.toPath(), ("@echo off\r\nmitsa run " + app.id + " %*\r\n")
+                    .getBytes(StandardCharsets.UTF_8));
+        } else {
+            File target = new File(bin, app.id);
+            Files.write(target.toPath(), ("#!/bin/bash\nexec mitsa run " + app.id + " \"$@\"\n")
+                    .getBytes(StandardCharsets.UTF_8));
+            try {
+                Files.setPosixFilePermissions(target.toPath(), perms);
+            } catch (UnsupportedOperationException ignored) {
+            }
+        }
+        System.out.println("Installed " + app.id + " onto " + bin);
     }
 }

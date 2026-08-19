@@ -58,16 +58,14 @@ You want to see `17` in the output.
 
 ## 2. Download MITSA itself
 
-**MITSA has no GitHub repository or published release yet as of
-2026-08-19** — this step is a placeholder until that exists. Once it
-does, this will read the same way Voynich's own step 2 does: go to
-`github.com/Walter-Stroebel/mitsa/releases/latest`, download the one
-`.jar` file attached (`mitsa-<version>-jar-with-dependencies.jar`), no
-building required.
+Go to
+[github.com/Walter-Stroebel/mitsa/releases/latest](https://github.com/Walter-Stroebel/mitsa/releases/latest)
+and download the one `.jar` file attached
+(`mitsa-<version>-jar-with-dependencies.jar`) — no building required.
 
-Until then: build it from source — see
+(If you'd rather build from source, see
 ["Building from source"](#building-from-source-instead) at the end of
-this document.
+this document instead.)
 
 However you obtained it, put the jar at:
 
