@@ -50,6 +50,10 @@ against the release's asset filenames to pick the right one (e.g.
 new id (see [INSTALL.md](INSTALL.md#5-register-your-first-app)) and
 installs a bare-command shim onto PATH.
 
+Already registered the app you want and just need another launch
+config for it? See `add ... --like` below instead — no need to
+re-register from scratch.
+
 ### `mitsa add <newId> --like <existingId> [launchArgs...]`
 
 Registers a **launch variant**: a second id that shares an

@@ -13,9 +13,19 @@ mitsa run infimg
 ```
 
 ...and from then on it's just `mitsa update` and `mitsa run <id>` —
-plus a system tray icon that launches any registered app with a click,
-even multiple launch variants of the same jar (think "the same tool,
-two different config files").
+plus a system tray icon that launches any registered app with a click.
+
+The same jar can also be registered a second time under a different
+id with its own fixed launch args — say, the same tool pointed at a
+different config file:
+
+```bash
+mitsa add infimg-work --like infimg --config-file ~/work-infimg.json
+```
+
+`infimg-work` shows up as its own tray entry and shim, no separate
+download. See [MANUAL.md](MANUAL.md#mitsa-add-newid---like-existingid-launchargs)
+for how launch variants work.
 
 - **Downloader** — fetches the right release asset from GitHub, no
   manual jar-hunting.
