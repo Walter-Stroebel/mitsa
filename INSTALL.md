@@ -133,8 +133,8 @@ into anything it writes; re-running `mitsa update` later just refreshes
 the cache in place.
 
 For the full command reference — including registering launch variants
-of the same jar with `mitsa add ... --like` — see
-[MANUAL.md](MANUAL.md).
+of the same jar with `mitsa add ... --like`, and keeping MITSA itself
+current with `mitsa self-update` — see [MANUAL.md](MANUAL.md).
 
 ---
 

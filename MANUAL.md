@@ -100,6 +100,17 @@ from another `mitsa` invocation on the same machine:
 - **stop** — shut the tray down; the caller waits for a PID
   acknowledgment rather than guessing whether it worked.
 
+### `mitsa self-update`
+
+Downloads the latest MITSA release and overwrites MITSA's own jar in
+place (unlike `mitsa update`, which only ever touches jars for
+*registered apps* — MITSA never updates itself as a side effect of
+that command). If the tray is currently running, stops it first (a
+running JVM can hold its own jar file open against overwrite,
+particularly on Windows) and relaunches it afterward once the new jar
+is in place. Verified end-to-end against a real GitHub release (jar
+downloaded, swapped in place, and confirmed runnable afterward).
+
 ### `mitsa reshim [id]`
 
 Re-writes launch shims for already-registered apps (one `id`, or all

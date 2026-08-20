@@ -79,7 +79,48 @@ public class GitHubReleaseFetcher {
      * @return the tag name that ended up current, or null if nothing matched.
      */
     public String updateToLatest(AppEntry app) throws IOException {
-        String url = "https://api.github.com/repos/" + app.githubOwner + "/" + app.githubRepo + "/releases/latest";
+        LatestRelease latest = fetchLatest(app.githubOwner, app.githubRepo, app.assetNamePattern);
+
+        JarCache cache = new JarCache(app.id);
+        String currentVersion = cache.currentVersion();
+        if (latest.tag.equals(currentVersion)) {
+            return latest.tag;
+        }
+
+        File target = cache.jarFileFor(latest.tag);
+        downloadFollowingRedirects(latest.assetUrl, target, 5);
+
+        cache.setCurrent(latest.tag);
+        return latest.tag;
+    }
+
+    /**
+     * Same "latest release" lookup as {@link #updateToLatest}, but for
+     * MITSA's own repo rather than a managed {@link AppEntry} — used by
+     * {@code mitsa self-update}, which downloads straight to a caller-given
+     * target (its own fixed jar path) instead of a per-app JarCache.
+     *
+     * @return the tag name of the release downloaded.
+     */
+    public String updateSelf(File target) throws IOException {
+        LatestRelease latest = fetchLatest("Walter-Stroebel", "mitsa", "mitsa-jar-with-dependencies\\.jar");
+        downloadFollowingRedirects(latest.assetUrl, target, 5);
+        return latest.tag;
+    }
+
+    private static final class LatestRelease {
+
+        final String tag;
+        final String assetUrl;
+
+        LatestRelease(String tag, String assetUrl) {
+            this.tag = tag;
+            this.assetUrl = assetUrl;
+        }
+    }
+
+    private LatestRelease fetchLatest(String githubOwner, String githubRepo, String assetNamePattern) throws IOException {
+        String url = "https://api.github.com/repos/" + githubOwner + "/" + githubRepo + "/releases/latest";
         HttpURLConnection conn = (HttpURLConnection) new URL(url).openConnection();
         conn.setRequestProperty("Accept", "application/vnd.github+json");
         conn.setRequestMethod("GET");
@@ -93,7 +134,7 @@ public class GitHubReleaseFetcher {
         JsonNode root = JSON.getMapper().readTree(body);
         String tag = root.path("tag_name").asText();
         JsonNode assets = root.path("assets");
-        Pattern pattern = Pattern.compile(app.assetNamePattern);
+        Pattern pattern = Pattern.compile(assetNamePattern);
         String assetUrl = null;
         Iterator<JsonNode> it = assets.elements();
         while (it.hasNext()) {
@@ -105,20 +146,9 @@ public class GitHubReleaseFetcher {
             }
         }
         if (assetUrl == null) {
-            throw new IOException("No asset in latest release of " + app.githubOwner + "/" + app.githubRepo
-                    + " matches pattern " + app.assetNamePattern);
+            throw new IOException("No asset in latest release of " + githubOwner + "/" + githubRepo
+                    + " matches pattern " + assetNamePattern);
         }
-
-        JarCache cache = new JarCache(app.id);
-        String currentVersion = cache.currentVersion();
-        if (tag.equals(currentVersion)) {
-            return tag;
-        }
-
-        File target = cache.jarFileFor(tag);
-        downloadFollowingRedirects(assetUrl, target, 5);
-
-        cache.setCurrent(tag);
-        return tag;
+        return new LatestRelease(tag, assetUrl);
     }
 }

@@ -6,6 +6,8 @@ package nl.infcomtec.mitsa;
 import java.awt.GraphicsEnvironment;
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.StandardCopyOption;
 import java.util.Arrays;
 import java.util.List;
 import nl.infcomtec.mitsa.tray.MitsaTray;
@@ -40,6 +42,8 @@ public class MitsaCli {
             MitsaTray.main(rest);
         } else if (verb.equals("reshim")) {
             cmdReshim(rest);
+        } else if (verb.equals("self-update")) {
+            cmdSelfUpdate();
         } else {
             printUsage();
             System.exit(1);
@@ -74,6 +78,39 @@ public class MitsaCli {
         System.err.println("  mitsa add <newId> --like <existingId> [launchArgs...]");
         System.err.println("  mitsa tray");
         System.err.println("  mitsa reshim [id]");
+        System.err.println("  mitsa self-update");
+    }
+
+    /**
+     * Downloads the latest MITSA release over its own jar at
+     * {@link MitsaPaths#selfJarFile()}. If the tray is running, stops it
+     * first (a running JVM can hold its own jar file open on Windows,
+     * blocking overwrite) and relaunches it afterward — unlike a managed
+     * app's jar, which lives in a per-version JarCache and never needs the
+     * process using it to let go of anything, MITSA's own jar is a single
+     * fixed file that must be safe to replace out from under whatever
+     * shim exec'd `java -jar` against it.
+     */
+    private static void cmdSelfUpdate() throws IOException {
+        Long stoppedTrayPid = MitsaTray.stopRunningTrayAndWait(2000);
+        try {
+            File target = MitsaPaths.selfJarFile();
+            File tmp = File.createTempFile("mitsa-self-update", ".jar", target.getParentFile());
+            GitHubReleaseFetcher fetcher = new GitHubReleaseFetcher();
+            String tag;
+            try {
+                tag = fetcher.updateSelf(tmp);
+            } catch (IOException ex) {
+                tmp.delete();
+                throw ex;
+            }
+            Files.move(tmp.toPath(), target.toPath(), StandardCopyOption.REPLACE_EXISTING);
+            System.out.println("mitsa -> " + tag);
+        } finally {
+            if (stoppedTrayPid != null) {
+                ProcessLauncher.launch(MitsaPaths.selfJarFile(), new String[]{"tray"});
+            }
+        }
     }
 
     private static void cmdRun(String[] rest) throws IOException {

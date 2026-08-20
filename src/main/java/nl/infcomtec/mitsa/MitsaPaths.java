@@ -58,6 +58,19 @@ public class MitsaPaths {
         return dir;
     }
 
+    /**
+     * Where MITSA's own jar lives, per INSTALL.md step 2 — a fixed path
+     * inside its own config root, not wherever it happened to be invoked
+     * from. This is the file {@code mitsa self-update} overwrites; it is
+     * NOT necessarily the same file the currently-running JVM was started
+     * from (e.g. a dev build run via {@code mvn exec} or an IDE) — callers
+     * that need the running jar's actual path should resolve that
+     * separately via the code source, not assume this one.
+     */
+    public static File selfJarFile() {
+        return new File(configDir(), "mitsa.jar");
+    }
+
     public static File appsJsonFile() {
         return new File(configDir(), "apps.json");
     }
