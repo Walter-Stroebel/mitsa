@@ -27,6 +27,7 @@ import nl.infcomtec.mitsa.AppEntry;
 import nl.infcomtec.mitsa.AppRegistry;
 import nl.infcomtec.mitsa.GitHubReleaseFetcher;
 import nl.infcomtec.mitsa.JarCache;
+import nl.infcomtec.mitsa.MitsaCli;
 import nl.infcomtec.mitsa.MitsaPaths;
 import nl.infcomtec.mitsa.ProcessLauncher;
 import nl.infcomtec.mitsa.tray.dbus.DBusConnection;
@@ -348,7 +349,7 @@ public class MitsaTray {
                 JOptionPane.showMessageDialog(null, "No cached jar for '" + app.id + "'. Run: mitsa update " + app.id);
                 return;
             }
-            ProcessLauncher.launch(jar, new String[0]);
+            ProcessLauncher.launch(jar, MitsaCli.mergeLaunchArgs(app, new String[0]));
         } catch (IOException ex) {
             JOptionPane.showMessageDialog(null, "Failed to launch " + app.id + ": " + ex.getMessage());
         }

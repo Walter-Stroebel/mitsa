@@ -132,6 +132,10 @@ it as its own separate process. `mitsa` never bakes a version number
 into anything it writes; re-running `mitsa update` later just refreshes
 the cache in place.
 
+For the full command reference — including registering launch variants
+of the same jar with `mitsa add ... --like` — see
+[MANUAL.md](MANUAL.md).
+
 ---
 
 ### If something goes wrong

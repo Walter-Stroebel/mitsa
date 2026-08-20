@@ -46,12 +46,32 @@ public class MitsaCli {
         }
     }
 
+    /**
+     * Prepends an app's stored {@link AppEntry#launchArgs} (its
+     * always-on launch args, e.g. a variant's {@code --config-file})
+     * ahead of any args given on this particular invocation, so a
+     * caller's own args still take effect/override where the app's
+     * own arg parsing allows it. {@code app} may be null (id not found
+     * in the registry, e.g. bare {@code mitsa run <id>} for something
+     * predating this field) — just passes {@code extraArgs} through.
+     */
+    public static String[] mergeLaunchArgs(AppEntry app, String[] extraArgs) {
+        if (app == null || app.launchArgs == null || app.launchArgs.length == 0) {
+            return extraArgs;
+        }
+        String[] merged = new String[app.launchArgs.length + extraArgs.length];
+        System.arraycopy(app.launchArgs, 0, merged, 0, app.launchArgs.length);
+        System.arraycopy(extraArgs, 0, merged, app.launchArgs.length, extraArgs.length);
+        return merged;
+    }
+
     private static void printUsage() {
         System.err.println("Usage: mitsa <run|update|list|add|tray> ...");
         System.err.println("  mitsa run <id> [args...]");
         System.err.println("  mitsa update [id]");
         System.err.println("  mitsa list");
         System.err.println("  mitsa add <id> <githubOwner> <githubRepo> <assetNamePattern>");
+        System.err.println("  mitsa add <newId> --like <existingId> [launchArgs...]");
         System.err.println("  mitsa tray");
         System.err.println("  mitsa reshim [id]");
     }
@@ -62,7 +82,10 @@ public class MitsaCli {
             System.exit(1);
         }
         String id = rest[0];
-        String[] appArgs = Arrays.copyOfRange(rest, 1, rest.length);
+        String[] extraArgs = Arrays.copyOfRange(rest, 1, rest.length);
+        AppRegistry reg = AppRegistry.load();
+        AppEntry app = reg.find(id);
+        String[] appArgs = mergeLaunchArgs(app, extraArgs);
         JarCache cache = new JarCache(id);
         File jar = cache.resolveCurrent();
         if (jar == null) {
@@ -168,8 +191,13 @@ public class MitsaCli {
     }
 
     private static void cmdAdd(String[] rest) throws IOException {
+        if (rest.length >= 2 && "--like".equals(rest[1])) {
+            cmdAddVariant(rest);
+            return;
+        }
         if (rest.length < 4) {
             System.err.println("Usage: mitsa add <id> <githubOwner> <githubRepo> <assetNamePattern>");
+            System.err.println("       mitsa add <newId> --like <existingId> [launchArgs...]");
             System.exit(1);
         }
         AppRegistry reg = AppRegistry.load();
@@ -182,5 +210,36 @@ public class MitsaCli {
         reg.save();
         ShimWriter.writeShims(app);
         System.out.println("Registered " + app.id + ". Run: mitsa update " + app.id);
+    }
+
+    /**
+     * {@code mitsa add <newId> --like <existingId> [launchArgs...]} — a
+     * launch variant of an already-registered app: same
+     * githubOwner/githubRepo/assetNamePattern (so it shares that app's
+     * cached-jar lineage under its own id, its own JarCache/update cycle),
+     * distinguished only by launchArgs always passed on launch (e.g. a
+     * different {@code --config-file}). Not the "add a brand new app"
+     * path above — for that, an id, not another id's id, is the target.
+     */
+    private static void cmdAddVariant(String[] rest) throws IOException {
+        String newId = rest[0];
+        String existingId = rest[2];
+        String[] launchArgs = Arrays.copyOfRange(rest, 3, rest.length);
+        AppRegistry reg = AppRegistry.load();
+        if (reg.find(newId) != null) {
+            System.err.println("App '" + newId + "' already registered");
+            System.exit(1);
+        }
+        AppEntry base = reg.find(existingId);
+        if (base == null) {
+            System.err.println("No such app '" + existingId + "' to derive from. Register it first with: mitsa add "
+                    + existingId + " <githubOwner> <githubRepo> <assetNamePattern>");
+            System.exit(1);
+        }
+        AppEntry app = new AppEntry(newId, base.githubOwner, base.githubRepo, base.assetNamePattern, launchArgs);
+        reg.apps.add(app);
+        reg.save();
+        ShimWriter.writeShims(app);
+        System.out.println("Registered " + app.id + " (like " + existingId + "). Run: mitsa update " + app.id);
     }
 }
